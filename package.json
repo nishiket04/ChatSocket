@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "socket.io": "^4.7.5"
+  }
+}
