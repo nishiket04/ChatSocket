@@ -104,7 +104,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on("new chat", (userA, userB, msg) => { // when user try to chat with new user for the first time
-   console.log("message:", msg);
+    console.log("message:", msg);
     newChat(userA,userB,msg);
   });
 
