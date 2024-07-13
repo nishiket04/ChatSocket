@@ -46,6 +46,46 @@ async function sendToChat(from,to,msg,room) {
   }
 }
 
+async function setUserFriends(email,user,msg,room) {
+  var data = { // send data formate
+    userId: user,
+    lastMessage : msg,
+    room: room
+  };
+  
+  try {
+    const snapshot = await db.collection('users').doc(email).collection("userFriends").add(data); // createing new doccumnet and adding that data to that doument
+  } catch (error) {
+    console.error('Error fetching users:', error); // if any error
+  }
+}
+setUserFriends("abc04@gmail.com","nishiket04@gmail.com","45","ZZJvPQhpVcYa3mAtfe3c");
+
+
+async function setLastMesseage(from,to,msg) {
+  var data = { // send data formate
+    lastMessage: msg
+  };
+  
+  try {
+    const snapshot = await db.collection('users').doc(from).collection("userFriends").where("userId","==",to).limit(1).get(); // createing new doccumnet and adding that data to that doument
+    if (snapshot.empty) {
+      console.log('No matching documents.');
+      return;
+    }
+
+    // Update each document that matches the query
+    snapshot.forEach(async (doc) => {
+      await doc.ref.update(data);
+      console.log(`Document with ID ${doc.id} successfully updated!`);
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error); // if any error
+  }
+}
+
+// setLastMesseage('nishiket04@gmail.com',"abc04@gmail.com","41");
+
 // This function create new room for users new chats
 async function newChat(from,to,msg) {
   var details = { // that new chat user details
@@ -101,11 +141,16 @@ io.on('connection', (socket) => {
     socket.to(room).emit('chat message', msg);
     console.log("message:", msg);
     sendToChat(from,to,msg,room);
+    setLastMesseage(from,to,msg);
+    setLastMesseage(to,from,msg);
   });
 
   socket.on("new chat", (userA, userB, msg) => { // when user try to chat with new user for the first time
     console.log("message:", msg);
-    newChat(userA,userB,msg);
+    var room = newChat(userA,userB,msg);
+    setUserFriends(userA,userB,msg,room);
+    setUserFriends(userB,userA,msg,room);
+
   });
 
   socket.on("stop typing", () => { // when user stop typing
