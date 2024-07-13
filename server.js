@@ -59,7 +59,7 @@ async function setUserFriends(email,user,msg,room) {
     console.error('Error fetching users:', error); // if any error
   }
 }
-setUserFriends("abc04@gmail.com","nishiket04@gmail.com","45","ZZJvPQhpVcYa3mAtfe3c");
+// setUserFriends("abc04@gmail.com","nishiket04@gmail.com","45","ZZJvPQhpVcYa3mAtfe3c");
 
 
 async function setLastMesseage(from,to,msg) {
@@ -137,9 +137,16 @@ io.on('connection', (socket) => {
     socket.to(room).emit('message', `A user has left room: ${room}`);
   });
 
-  socket.on('chat message', (from, to, msg,room) => { //
-    socket.to(room).emit('chat message', msg);
+  socket.on('chat message', (from, to, msg,room) => { // This send chat to ther user
+    const messageData = { // converted into JSON boject beacuse in android we set that only one JSON Object will be recived
+      message: msg,
+      from: from,
+      to: to,
+      room: room
+  };
+    socket.to(room).emit('chat message',messageData); // here we send that object to other user
     console.log("message:", msg);
+    console.log("room",room);
     sendToChat(from,to,msg,room);
     setLastMesseage(from,to,msg);
     setLastMesseage(to,from,msg);
