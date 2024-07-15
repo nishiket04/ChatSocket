@@ -152,20 +152,20 @@ io.on('connection', (socket) => {
     setLastMesseage(to,from,msg);
   });
 
-  socket.on("new chat", (userA, userB, msg) => { // when user try to chat with new user for the first time
+  socket.on("new chat", async (userA, userB, msg) => { // when user try to chat with new user for the first time
     console.log("message:", msg);
-    var room = newChat(userA,userB,msg);
+    var room = await newChat(userA,userB,msg);
     setUserFriends(userA,userB,msg,room);
     setUserFriends(userB,userA,msg,room);
 
   });
 
-  socket.on("stop typing", () => { // when user stop typing
-
+  socket.on("stop typing", (room) => { // when user stop typing
+    socket.to(room).emit("stop typing");
   })
 
-  socket.on("typing", () => { // when user is typing
-    socket.broadcast.emit("typing", "typing");
+  socket.on("typing", (room) => { // when user is typing
+    socket.to(room).emit("typing");
   })
 
 });
