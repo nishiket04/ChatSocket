@@ -7,6 +7,7 @@ const io = require("socket.io")(3000, {
 });
 const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
 const { getFirestore, Timestamp, FieldValue, Filter } = require('firebase-admin/firestore');
+const { getMessaging } = require('firebase-admin/messaging');
 
 const serviceAccount = require('./serviceAccount.json');
 
@@ -14,6 +15,7 @@ initializeApp({
   credential: cert(serviceAccount)
 });
 const db = getFirestore();
+const messaging = getMessaging();
 // firebase firetore is all setuped
 // async function fetchUsers() {
 //   try {
@@ -113,6 +115,23 @@ async function newChat(from,to,msg) {
 // newChat("nishiket04gmail.com","abc042gmail.com","byy");
 // sendToChat("nishiket04gmail.com","abc042gmail.com","byy","ZZJvPQhpVcYa3mAtfe3c");
 
+async function sendFCMMessage(email, title, body, imageUrl) {
+  const message = {
+    notification: {
+      title: title,
+      body: body,
+      imageUrl: imageUrl
+    },
+    topic: email
+  };
+
+  try {
+    const response = await messaging.send(message);
+    console.log('Successfully sent message:', response);
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+}
 io.on('connection', (socket) => {
 
   console.log('a user connected', socket.id); // logs when user is connected and it's ID
@@ -150,6 +169,7 @@ io.on('connection', (socket) => {
     sendToChat(from,to,msg,room);
     setLastMesseage(from,to,msg);
     setLastMesseage(to,from,msg);
+    sendFCMMessage(to,"new message",msg,"https://firebasestorage.googleapis.com/v0/b/converse-1e750.appspot.com/o/1152314?alt=media&token=bf8f7b0b-b171-4a10-b97d-e99c06126a90");
   });
 
   socket.on("new chat", async (userA, userB, msg) => { // when user try to chat with new user for the first time
@@ -157,7 +177,7 @@ io.on('connection', (socket) => {
     var room = await newChat(userA,userB,msg);
     setUserFriends(userA,userB,msg,room);
     setUserFriends(userB,userA,msg,room);
-
+    sendFCMMessage(userB,"new message",msg,"https://firebasestorage.googleapis.com/v0/b/converse-1e750.appspot.com/o/1152314?alt=media&token=bf8f7b0b-b171-4a10-b97d-e99c06126a90");
   });
 
   socket.on("stop typing", (room) => { // when user stop typing
