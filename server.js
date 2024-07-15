@@ -16,21 +16,27 @@ initializeApp({
 });
 const db = getFirestore();
 const messaging = getMessaging();
+
+function sanitizeTopicName(name) {
+  return name.replace(/[^a-zA-Z0-9-_~]/g, '_');
+}
+
 // firebase firetore is all setuped
-// async function fetchUsers() {
-//   try {
-//     const snapshot = await db.collection('users').get();
-//     // Process the snapshot here
-//     snapshot.forEach((doc) => {
-//       console.log(doc.id, '=>', doc.data());
-//     });
-//   } catch (error) {
-//     console.error('Error fetching users:', error);
-//   }
-// }
+async function fetchUsers(email) {
+  try {
+    const snapshot = await db.collection('users').doc(email).get();
+    // Process the snapshot here
+    // snapshot.forEach((doc) => {
+      // console.log(snapshot.id, '=>', snapshot.data());
+      return snapshot;
+    // });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
 
 // // Call the async function
-// fetchUsers();
+// fetchUsers("nishiket04@gmail.com");
 
 // This function send message to room in new document with that servers time stamp
 async function sendToChat(from,to,msg,room) {
@@ -115,14 +121,16 @@ async function newChat(from,to,msg) {
 // newChat("nishiket04gmail.com","abc042gmail.com","byy");
 // sendToChat("nishiket04gmail.com","abc042gmail.com","byy","ZZJvPQhpVcYa3mAtfe3c");
 
-async function sendFCMMessage(email, title, body, imageUrl) {
+async function sendFCMMessage(email, body) {
+  var doc= await fetchUsers(email);
+  const topic = sanitizeTopicName(email);
   const message = {
     notification: {
-      title: title,
+      title: doc.get("name"),
       body: body,
-      imageUrl: imageUrl
+      imageUrl: doc.get("userImage")
     },
-    topic: email
+    topic: topic
   };
 
   try {
@@ -132,6 +140,7 @@ async function sendFCMMessage(email, title, body, imageUrl) {
     console.error('Error sending message:', error);
   }
 }
+sendFCMMessage("nishiket04@gmail.com","test Message");
 io.on('connection', (socket) => {
 
   console.log('a user connected', socket.id); // logs when user is connected and it's ID
@@ -169,7 +178,7 @@ io.on('connection', (socket) => {
     sendToChat(from,to,msg,room);
     setLastMesseage(from,to,msg);
     setLastMesseage(to,from,msg);
-    sendFCMMessage(to,"new message",msg,"https://firebasestorage.googleapis.com/v0/b/converse-1e750.appspot.com/o/1152314?alt=media&token=bf8f7b0b-b171-4a10-b97d-e99c06126a90");
+    sendFCMMessage(to,msg);
   });
 
   socket.on("new chat", async (userA, userB, msg) => { // when user try to chat with new user for the first time
@@ -177,7 +186,7 @@ io.on('connection', (socket) => {
     var room = await newChat(userA,userB,msg);
     setUserFriends(userA,userB,msg,room);
     setUserFriends(userB,userA,msg,room);
-    sendFCMMessage(userB,"new message",msg,"https://firebasestorage.googleapis.com/v0/b/converse-1e750.appspot.com/o/1152314?alt=media&token=bf8f7b0b-b171-4a10-b97d-e99c06126a90");
+    sendFCMMessage(userB,msg);
   });
 
   socket.on("stop typing", (room) => { // when user stop typing
