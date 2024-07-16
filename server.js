@@ -157,7 +157,7 @@ async function sendFCMMessage(from,to, body) {
     notification: {
       title: doc.get("name"),
       body: body,
-      imageUrl: doc.get("userImage")
+      // imageUrl: doc.get("userImage")
     },
     topic: topic
   };
@@ -169,7 +169,7 @@ async function sendFCMMessage(from,to, body) {
     console.error('Error sending message:', error);
   }
 }
-// sendFCMMessage("nishiket04@gmail.com","test Message");
+// sendFCMMessage("nishiket04@gmail.com","test@gmail.com","test Message");
 io.on('connection', (socket) => {
 
   console.log('a user connected', socket.id); // logs when user is connected and it's ID
