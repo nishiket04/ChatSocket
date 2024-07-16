@@ -21,6 +21,18 @@ function sanitizeTopicName(name) {
   return name.replace(/[^a-zA-Z0-9-_~]/g, '_');
 }
 
+async function setStatus(email,status) {
+  try {
+    const snapshot = await db.collection('users').doc(email).update("status",status);
+    // Process the snapshot here
+    // snapshot.forEach((doc) => {
+      // console.log(snapshot.id, '=>', snapshot.data());
+      return snapshot;
+    // });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
 // firebase firetore is all setuped
 async function fetchUsers(email) {
   try {
@@ -35,8 +47,6 @@ async function fetchUsers(email) {
   }
 }
 
-// // Call the async function
-// fetchUsers("nishiket04@gmail.com");
 
 // This function send message to room in new document with that servers time stamp
 async function sendToChat(from,to,msg,room) {
@@ -80,7 +90,6 @@ async function setUserFriends(email,user,msg,room) {
     console.error('Error fetching users:', error); // if any error
   }
 }
-// setUserFriends("abc04@gmail.com","nishiket04@gmail.com","45","ZZJvPQhpVcYa3mAtfe3c");
 
 
 async function setLastGroupMesseage(room,msg) {
@@ -121,7 +130,6 @@ async function setLastMesseage(from,to,msg) {
   }
 }
 
-// setLastMesseage('nishiket04@gmail.com',"abc04@gmail.com","41");
 
 // This function create new room for users new chats
 async function newChat(from,to,msg) {
@@ -147,8 +155,7 @@ async function newChat(from,to,msg) {
     console.error('Error fetching users:', error); // if any error
   }
 }
-// newChat("nishiket04gmail.com","abc042gmail.com","byy");
-// sendToChat("nishiket04gmail.com","abc042gmail.com","byy","ZZJvPQhpVcYa3mAtfe3c");
+
 
 async function sendFCMMessage(from,to, body) {
   var doc= await fetchUsers(from);
@@ -175,7 +182,19 @@ io.on('connection', (socket) => {
   console.log('a user connected', socket.id); // logs when user is connected and it's ID
   
   socket.on('disconnect', () => { // when  user is diconnectd it logs
+    setStatus(socket.email,"Offline");
     console.log('user disconnected');
+  });
+
+  socket.on('join', (email) => {
+    socket.email = email; // Store email in socket object for future use
+    setStatus(email,"Online")
+    console.log(`User connected with email: ${email}`);
+  });
+
+  socket.on('remove', (email) => {
+    socket.email = email; // Store email in socket object for future use
+    console.log(`User connected with email: ${email}`);
   });
 
   socket.on('send name', (username) => {
