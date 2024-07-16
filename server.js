@@ -54,6 +54,19 @@ async function sendToChat(from,to,msg,room) {
   }
 }
 
+async function sendToGroupChat(from,msg,room) {
+  var data = { // send data formate
+    from: from,
+    msg: msg,
+    time: FieldValue.serverTimestamp()
+  };
+  
+  try {
+    const snapshot = await db.collection('groupChat').doc(room).collection("chats").add(data); // createing new doccumnet and adding that data to that doument
+  } catch (error) {
+    console.error('Error fetching users:', error); // if any error
+  }
+}
 async function setUserFriends(email,user,msg,room) {
   var data = { // send data formate
     userId: user,
@@ -69,6 +82,22 @@ async function setUserFriends(email,user,msg,room) {
 }
 // setUserFriends("abc04@gmail.com","nishiket04@gmail.com","45","ZZJvPQhpVcYa3mAtfe3c");
 
+
+async function setLastGroupMesseage(room,msg) {
+  var data = { // send data formate
+    lastMessage: msg
+  };
+  
+  try {
+    const snapshot = await db.collection('groupChat').doc(room).update(data);
+    if (snapshot.empty) {
+      console.log('No matching documents.');
+      return;
+    }
+  } catch (error) {
+    console.error('Error fetching users:', error); // if any error
+  }
+}
 
 async function setLastMesseage(from,to,msg) {
   var data = { // send data formate
@@ -121,9 +150,9 @@ async function newChat(from,to,msg) {
 // newChat("nishiket04gmail.com","abc042gmail.com","byy");
 // sendToChat("nishiket04gmail.com","abc042gmail.com","byy","ZZJvPQhpVcYa3mAtfe3c");
 
-async function sendFCMMessage(email, body) {
-  var doc= await fetchUsers(email);
-  const topic = sanitizeTopicName(email);
+async function sendFCMMessage(from,to, body) {
+  var doc= await fetchUsers(from);
+  const topic = sanitizeTopicName(to);
   const message = {
     notification: {
       title: doc.get("name"),
@@ -140,7 +169,7 @@ async function sendFCMMessage(email, body) {
     console.error('Error sending message:', error);
   }
 }
-sendFCMMessage("nishiket04@gmail.com","test Message");
+// sendFCMMessage("nishiket04@gmail.com","test Message");
 io.on('connection', (socket) => {
 
   console.log('a user connected', socket.id); // logs when user is connected and it's ID
@@ -178,7 +207,7 @@ io.on('connection', (socket) => {
     sendToChat(from,to,msg,room);
     setLastMesseage(from,to,msg);
     setLastMesseage(to,from,msg);
-    sendFCMMessage(to,msg);
+    sendFCMMessage(from,to,msg);
   });
 
   socket.on("new chat", async (userA, userB, msg) => { // when user try to chat with new user for the first time
@@ -189,12 +218,25 @@ io.on('connection', (socket) => {
     sendFCMMessage(userB,msg);
   });
 
+  socket.on('group message', (from, msg,room) => { // This send chat to ther user
+    const messageData = { // converted into JSON boject beacuse in android we set that only one JSON Object will be recived
+      message: msg,
+      from: from,
+      room: room
+  };
+    socket.to(room).emit('group message',messageData); // here we send that object to other user
+    console.log("message:", msg);
+    console.log("room",room);
+    sendToGroupChat(from,msg,room);
+    setLastGroupMesseage(room,msg);
+  });
+
   socket.on("stop typing", (room) => { // when user stop typing
-    socket.to(room).emit("stop typing");
+    socket.to(room).emit("stop typing",{typing: "online"});
   })
 
   socket.on("typing", (room) => { // when user is typing
-    socket.to(room).emit("typing");
+    socket.to(room).emit("typing",{typing: "typing"});
   })
 
 });
